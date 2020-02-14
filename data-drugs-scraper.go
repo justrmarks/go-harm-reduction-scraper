@@ -18,7 +18,7 @@ func main() {
 		colly.Async(true),
 		// Attach a debugger to the collector
 		colly.Debugger(&debug.LogDebugger{}),
-		colly.AllowedDomains(url),
+		// colly.AllowedDomains("ecstasydata.org"),
 		// Allow visiting the same page multiple times
 		colly.AllowURLRevisit(),
 		// Allow crawling to be done in parallel / async
@@ -34,15 +34,31 @@ func main() {
 		DomainGlob:  "*.ecstasydata.org",
 		Parallelism: 2,
 		Delay:       1 * time.Second,
-		RandomDelay: 1 * time.Second
+		RandomDelay: 1 * time.Second,
 	})
 
-	// Start scraping in five threads on https://httpbin.org/delay/2
-	c.OnHTML(".tablet", func(e *colly.HTMLElement) {
-
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL)
 	})
 
-	c.Visit(url)
+	c.OnError(func(_ *colly.Response, err error) {
+		fmt.Println("Something went wrong:", err)
+	})
+
+	c.OnResponse(func(r *colly.Response) {
+		fmt.Println("Visited", r.Request.URL, r.StatusCode)
+	})
+
+	c.OnHTML("tr", func(e *colly.HTMLElement) {
+		fmt.Println(e.Text)
+	})
+
 	// Wait until threads are finished
-	
+
+	err := c.Visit(url)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	c.Wait()
 }
